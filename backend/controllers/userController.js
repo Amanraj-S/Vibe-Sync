@@ -45,7 +45,7 @@ exports.updateProfile = async (req, res) => {
     try {
         const updates = { ...req.body };
 
-        // If an image file was uploaded, save its path
+        // If an image file was uploaded (Cloudinary), save its secure URL
         if (req.file) {
             updates.profilePic = req.file.path;
         }
@@ -73,20 +73,37 @@ exports.getUserProfile = async (req, res) => {
     }
 };
 
-// 5. Get Followers & Following Details (For the User List Screen)
+// 5. Get Followers & Following Details (UPDATED FOR CHAT LIST)
 exports.getUserConnections = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id)
-            .populate('followers', 'username profilePic about')
-            .populate('following', 'username profilePic about');
+        const user = await User.findById(req.params.id);
         
         if (!user) return res.status(404).json({ message: "User not found" });
 
+        // Fetch FULL details for all users in the 'following' list
+        // This fixes the "String is not a subtype of Map" error in Flutter
+        const followingList = await Promise.all(
+            user.following.map((friendId) => {
+                return User.findById(friendId).select('username profilePic isOnline lastSeen about');
+            })
+        );
+
+        const followersList = await Promise.all(
+            user.followers.map((friendId) => {
+                return User.findById(friendId).select('username profilePic isOnline lastSeen about');
+            })
+        );
+
+        // Filter out any nulls (in case a followed user was deleted)
+        const validFollowing = followingList.filter(friend => friend !== null);
+        const validFollowers = followersList.filter(friend => friend !== null);
+
         res.json({
-            followers: user.followers,
-            following: user.following
+            following: validFollowing, // Returns Objects, not Strings
+            followers: validFollowers
         });
     } catch (err) {
+        console.error("Connection Error:", err);
         res.status(500).json({ error: err.message });
     }
 };

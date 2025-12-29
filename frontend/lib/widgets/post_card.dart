@@ -39,33 +39,31 @@ class _PostCardState extends State<PostCard> {
     likeCount = widget.post.likes.length;
   }
 
-  // --- SMART IMAGE URL FIXER ---
+  // --- SMART IMAGE URL FIXER (UPDATED FOR RENDER) ---
   String _getValidImageUrl(String url) {
     if (url.isEmpty) return "";
 
     // 1. RESCUE BROKEN CLOUDINARY LINKS
-    // If the URL contains the Cloudinary folder name but is pointing to localhost
+    // If the DB has a messy URL containing "vibesync_posts", extract ID and fix it.
     if (url.contains("vibesync_posts") || url.contains("vibesync")) {
-      // Extract the actual ID (everything after the folder name)
       String cleanId = url.split(RegExp(r'vibesync(?:_posts)?/')).last;
+      // Using the Cloud Name you provided in the previous snippet: devq3zfrq
       return "https://res.cloudinary.com/devq3zfrq/image/upload/vibesync_posts/$cleanId";
     }
 
     // 2. STANDARD URL HANDLING
-    // REPLACE WITH YOUR COMPUTER'S IP
-    const String myPcIp = "192.168.1.2"; 
-
-    // Handle localhost URLs (replace with PC IP)
-    if (url.contains("localhost")) {
-      return url.replaceFirst("localhost", myPcIp);
+    // If it's already a valid web URL (Cloudinary), return as is.
+    if (url.startsWith("http") || url.startsWith("https")) {
+      // If the database accidentally saved "localhost", point it to Render
+      if (url.contains("localhost")) {
+        return url.replaceFirst("http://localhost:5000", "https://vibe-sync-ijgt.onrender.com");
+      }
+      return url;
     }
 
-    // Handle relative paths (e.g., "uploads/image.png")
-    if (!url.startsWith("http")) {
-      return "http://$myPcIp:5000/$url";
-    }
-
-    return url;
+    // 3. HANDLE RELATIVE PATHS (Legacy images)
+    // If the DB has just "uploads/image.png", assume it's on Render
+    return "https://vibe-sync-ijgt.onrender.com/$url";
   }
 
   // --- LIKE LOGIC ---
@@ -286,6 +284,7 @@ class _PostCardState extends State<PostCard> {
               child: CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.white,
+                // --- FIX: APPLIED _getValidImageUrl HERE ---
                 backgroundImage: (widget.post.user.profilePic.isNotEmpty)
                     ? NetworkImage(
                         _getValidImageUrl(widget.post.user.profilePic))
@@ -318,7 +317,7 @@ class _PostCardState extends State<PostCard> {
                 : null,
           ),
 
-          // 2. Image
+          // 2. Image (POST IMAGE)
           if (widget.post.imageUrl.isNotEmpty)
             Image.network(
               _getValidImageUrl(widget.post.imageUrl),

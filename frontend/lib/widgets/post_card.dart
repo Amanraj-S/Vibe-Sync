@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
+import '../utils/image_utils.dart'; // <--- IMPORT THE HELPER
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -37,29 +38,6 @@ class _PostCardState extends State<PostCard> {
     super.initState();
     isLiked = widget.post.likes.contains(widget.currentUserId);
     likeCount = widget.post.likes.length;
-  }
-
-  // --- SMART IMAGE URL FIXER ---
-  String _getValidImageUrl(String url) {
-    if (url.isEmpty) return "";
-
-    // 1. RESCUE BROKEN CLOUDINARY LINKS
-    if (url.contains("vibesync_posts") || url.contains("vibesync")) {
-      String cleanId = url.split(RegExp(r'vibesync(?:_posts)?/')).last;
-      // Replace with your actual Cloudinary Cloud Name
-      return "https://res.cloudinary.com/devq3zfrq/image/upload/vibesync_posts/$cleanId";
-    }
-
-    // 2. STANDARD URL HANDLING
-    if (url.startsWith("http") || url.startsWith("https")) {
-      if (url.contains("localhost")) {
-        return url.replaceFirst("http://localhost:5000", "https://vibe-sync-ijgt.onrender.com");
-      }
-      return url;
-    }
-
-    // 3. HANDLE RELATIVE PATHS
-    return "https://vibe-sync-ijgt.onrender.com/$url";
   }
 
   // --- LIKE LOGIC ---
@@ -251,6 +229,13 @@ class _PostCardState extends State<PostCard> {
   Widget build(BuildContext context) {
     final bool isOwner = widget.post.user.id == widget.currentUserId;
 
+    // --- USE IMAGE UTILS HELPER HERE ---
+    String profilePicUrl = widget.post.user.profilePic;
+    String validProfileUrl = ImageUtils.getValidImageUrl(profilePicUrl);
+
+    String postImageUrl = widget.post.imageUrl;
+    String validPostImageUrl = ImageUtils.getValidImageUrl(postImageUrl);
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
@@ -267,7 +252,7 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Header (FIXED AVATAR)
+          // 1. Header (AVATAR)
           ListTile(
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -280,26 +265,21 @@ class _PostCardState extends State<PostCard> {
               child: CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.white,
-                // --- FIX STARTS HERE ---
-                // We use ClipOval + Image.network instead of backgroundImage.
-                // This lets us safely catch 404 errors and show the default Icon.
                 child: ClipOval(
                   child: SizedBox(
                     width: 40,
                     height: 40,
-                    child: (widget.post.user.profilePic.isNotEmpty)
+                    child: (validProfileUrl.isNotEmpty)
                         ? Image.network(
-                            _getValidImageUrl(widget.post.user.profilePic),
+                            validProfileUrl,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              // If image fails, show Icon
                               return const Icon(Icons.person, color: Colors.grey);
                             },
                           )
                         : const Icon(Icons.person, color: Colors.grey),
                   ),
                 ),
-                // --- FIX ENDS HERE ---
               ),
             ),
             title: Text(widget.post.user.username,
@@ -325,10 +305,10 @@ class _PostCardState extends State<PostCard> {
                 : null,
           ),
 
-          // 2. Image (POST IMAGE)
-          if (widget.post.imageUrl.isNotEmpty)
+          // 2. Image (POST IMAGE - FIXED)
+          if (validPostImageUrl.isNotEmpty)
             Image.network(
-              _getValidImageUrl(widget.post.imageUrl),
+              validPostImageUrl,
               width: double.infinity,
               fit: BoxFit.fitWidth,
               loadingBuilder: (context, child, loadingProgress) {
@@ -339,6 +319,7 @@ class _PostCardState extends State<PostCard> {
                         child: CircularProgressIndicator(color: _seaBlueDark)));
               },
               errorBuilder: (context, error, stackTrace) {
+                // If this still fails, double check your Cloud Name in ImageUtils
                 return Container(
                     height: 200,
                     color: Colors.grey[100],
@@ -348,7 +329,7 @@ class _PostCardState extends State<PostCard> {
               },
             ),
 
-          // 3. Actions
+          // 3. Actions (Likes, Comments)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(

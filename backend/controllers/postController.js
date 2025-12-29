@@ -7,12 +7,17 @@ const createPost = async (req, res) => {
   try {
     const newPost = new Post({
       description: req.body.description,
-      imageUrl: req.file ? `http://localhost:5000/uploads/${req.file.filename}` : "",
-      user: req.user.id, // Comes from authMiddleware
+      // FIX: Use req.file.path to get the actual Cloudinary URL
+      // Do NOT use localhost construction here.
+      imageUrl: req.file ? req.file.path : "", 
+      user: req.user.id,
     });
+    
     const savedPost = await newPost.save();
-    // Populate the user immediately so the frontend gets the username right away
+    
+    // Populate user details immediately
     await savedPost.populate('user', 'username profilePic');
+    
     res.status(201).json(savedPost);
   } catch (err) {
     res.status(500).json(err);

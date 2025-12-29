@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 import 'auth_screen.dart';
 import 'edit_profile_screen.dart';
 import 'user_list_screen.dart';
-import '../utils/image_utils.dart'; // <--- Ensure this file exists
+import '../utils/image_utils.dart'; // <--- Ensure this file exists and is updated
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // If null, loads logged-in user. If set, loads that user.
@@ -110,7 +110,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Helper for Gradient Text
   Widget _buildGradientText(String text, double fontSize) {
     return ShaderMask(
       shaderCallback: (bounds) => _seaBlueGradient.createShader(
@@ -148,14 +147,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (bioText.trim().isEmpty) bioText = "No bio yet.";
 
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.black),
         title: _buildGradientText(
-            userProfile!['username'] ?? "Profile", 20), // Gradient Username
+            userProfile!['username'] ?? "Profile", 20),
         actions: [
           if (isMe)
             IconButton(
@@ -180,7 +179,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             // --- PROFILE HEADER ---
             Column(
               children: [
-                // Avatar with Sea Blue Gradient Ring
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -190,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    // --- 3. UPDATED PROFILE PICTURE WIDGET ---
+                    // --- 3. ROBUST IMAGE DISPLAY ---
                     child: ClipOval(
                       child: SizedBox(
                         width: 100, // 2x radius
@@ -200,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 validProfileUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  // This triggers if the URL is broken (404)
+                                  // Fallback if image fails to load (404)
                                   return Icon(Icons.person,
                                       size: 50, color: Colors.grey[300]);
                                 },
@@ -285,8 +283,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           gradient: followers.contains(currentUserId)
-                              ? null // Grey for Unfollow
-                              : _seaBlueGradient, // Gradient for Follow
+                              ? null
+                              : _seaBlueGradient,
                           color: followers.contains(currentUserId)
                               ? Colors.grey[200]
                               : null,
@@ -348,7 +346,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       return GestureDetector(
                         onTap: () {
-                          // Show Post Detail
                           showDialog(
                               context: context,
                               builder: (_) => Dialog(
@@ -385,7 +382,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   ));
                         },
-                        // Post Thumbnail
                         child: validPostImg.isNotEmpty
                             ? Image.network(
                                 validPostImg,

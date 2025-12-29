@@ -40,19 +40,30 @@ exports.followUser = async (req, res) => {
     }
 };
 
-// 3. Update Profile (About & Profile Pic)
+// 3. Update Profile (Username, About & Profile Pic)
 exports.updateProfile = async (req, res) => {
     try {
-        const updates = { ...req.body };
+        // Initialize update object
+        const updates = {};
+
+        // Explicitly check and assign fields to prevent unwanted updates
+        if (req.body.username) {
+            updates.username = req.body.username;
+        }
+        
+        // Handle 'about' or 'desc' depending on what the frontend sends
+        if (req.body.about) updates.about = req.body.about;
+        if (req.body.desc) updates.about = req.body.desc; // Map desc to about if schemas differ
 
         // If an image file was uploaded (Cloudinary), save its secure URL
         if (req.file) {
             updates.profilePic = req.file.path;
         }
 
+        // Perform the update
         const updatedUser = await User.findByIdAndUpdate(
             req.user.id,
-            updates,
+            { $set: updates },
             { new: true } // Return the updated user data
         ).select('-password');
 

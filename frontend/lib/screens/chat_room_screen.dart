@@ -41,8 +41,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _isOnline = widget.targetUser.isOnline;
     _lastSeen = widget.targetUser.lastSeen;
 
-    _loadMyId();
-    _fetchHistory();
+    _initializeData(); // Load ID then History
     _setupSocketListeners();
 
     // 2. Start a timer to refresh the "Last seen X min ago" text every minute
@@ -53,10 +52,15 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     });
   }
 
+  // Ensure myId is loaded BEFORE showing messages to fix alignment
+  Future<void> _initializeData() async {
+    await _loadMyId();
+    _fetchHistory();
+  }
+
   @override
   void dispose() {
-    _statusTimer?.cancel(); // Stop timer when leaving screen
-    // Optional: Remove specific socket listeners if needed
+    _statusTimer?.cancel();
     super.dispose();
   }
 
@@ -123,10 +127,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     _controller.clear();
   }
 
-  // Helper to format "Last seen" (Uses local state variables)
+  // Helper to format "Last seen"
   String _getStatusText() {
     if (_isOnline) return "Online";
-
     if (_lastSeen == null) return "Offline";
 
     final diff = DateTime.now().difference(_lastSeen!);
@@ -196,7 +199,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     color: _isOnline ? Colors.green : Colors.grey[500],
-                    fontWeight: _isOnline ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        _isOnline ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               ],
@@ -213,8 +217,14 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               itemCount: messages.length,
               itemBuilder: (ctx, i) {
                 final msg = messages[i];
-                final isMe = msg.senderId == myId;
+                
+                // --- CORE LOGIC: Determines Left or Right ---
+                // If I am the sender, it returns true (Right Side)
+                // If myId is null (loading), default to false (Left Side) to prevent crashes
+                final bool isMe = (myId != null) && (msg.senderId == myId);
+
                 return Align(
+                  // WHATSAPP CONCEPT: Me -> Right, Others -> Left
                   alignment:
                       isMe ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
@@ -224,15 +234,20 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     constraints: BoxConstraints(
                         maxWidth: MediaQuery.of(context).size.width * 0.75),
                     decoration: BoxDecoration(
+                      // WHATSAPP CONCEPT: Colored for me, Grey/White for others
                       gradient: isMe ? _seaBlueGradient : null,
                       color: isMe ? null : Colors.grey[100],
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
-                        bottomLeft:
-                            isMe ? const Radius.circular(16) : Radius.zero,
-                        bottomRight:
-                            isMe ? Radius.zero : const Radius.circular(16),
+                        // WHATSAPP CONCEPT: The "Tail" logic
+                        // If it's me, bottom-left is round, bottom-right is sharp (or tail)
+                        bottomLeft: isMe 
+                            ? const Radius.circular(16) 
+                            : Radius.zero, // Tail for receiver
+                        bottomRight: isMe 
+                            ? Radius.zero  // Tail for sender
+                            : const Radius.circular(16),
                       ),
                     ),
                     child: Text(

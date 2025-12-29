@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 import 'auth_screen.dart';
 import 'edit_profile_screen.dart';
 import 'user_list_screen.dart';
-import '../utils/image_utils.dart'; // <--- Ensure this file exists and is updated
+import '../utils/image_utils.dart'; // <--- Ensure this file exists
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // If null, loads logged-in user. If set, loads that user.

@@ -12,9 +12,12 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  // 1. Add Username Controller
+  final _usernameController = TextEditingController();
   final _aboutController = TextEditingController();
+  
   XFile? _imageFile;
-  String? _currentProfilePic; // To show existing image before picking new one
+  String? _currentProfilePic; 
   bool _isLoading = false;
 
   // --- SEA BLUE THEME COLORS ---
@@ -33,11 +36,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _loadCurrentProfile();
   }
 
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _aboutController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadCurrentProfile() async {
     try {
       final profile = await ApiService.getMyProfile();
       setState(() {
-        _aboutController.text = profile['about'] ?? '';
+        // 2. Pre-fill Username
+        _usernameController.text = profile['username'] ?? '';
+        _aboutController.text = profile['about'] ?? profile['desc'] ?? ''; // Handle both 'about' or 'desc' keys
         _currentProfilePic = profile['profilePic'];
       });
     } catch (e) {
@@ -54,11 +66,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _updateProfile() async {
+    if (_usernameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Username cannot be empty")));
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      await ApiService.updateProfile(_aboutController.text, _imageFile);
+      // 3. Pass username to API
+      await ApiService.updateProfile(
+        _usernameController.text.trim(), 
+        _aboutController.text.trim(), 
+        _imageFile
+      );
+      
       if (mounted) {
-        Navigator.pop(context); // Go back to profile screen
+        Navigator.pop(context); 
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text("Profile Updated!")));
       }
@@ -71,7 +95,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  // Helper for Gradient Text
   Widget _buildGradientText(String text, double fontSize) {
     return ShaderMask(
       shaderCallback: (bounds) => _seaBlueGradient.createShader(
@@ -82,7 +105,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.white, // Required for ShaderMask
+          color: Colors.white, 
         ),
       ),
     );
@@ -90,18 +113,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine which image to show
     ImageProvider? backgroundImage;
     if (_imageFile != null) {
       backgroundImage = kIsWeb
           ? NetworkImage(_imageFile!.path)
           : FileImage(File(_imageFile!.path)) as ImageProvider;
     } else if (_currentProfilePic != null && _currentProfilePic!.isNotEmpty) {
+      // Ensure you are using your ImageUtils if needed, or direct network
+      // If you have the ImageUtils helper, wrap this: ImageUtils.getValidImageUrl(_currentProfilePic!)
+      // For now, assuming standard logic:
       backgroundImage = NetworkImage(_currentProfilePic!);
     }
 
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: Colors.white, 
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -124,7 +149,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: Stack(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(4), // Border width
+                    padding: const EdgeInsets.all(4), 
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: _seaBlueGradient,
@@ -158,20 +183,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 40),
 
-            // --- ABOUT ME INPUT (FIXED ALIGNMENT) ---
+            // --- 4. USERNAME INPUT ---
+            TextField(
+              controller: _usernameController,
+              decoration: InputDecoration(
+                labelText: "Username",
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Icon(Icons.person_outline, color: _seaBlueDark),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey[100],
+                contentPadding: const EdgeInsets.symmetric(
+                    vertical: 16, horizontal: 16),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // --- ABOUT ME INPUT ---
             TextField(
               controller: _aboutController,
               maxLines: 4,
-              textAlignVertical: TextAlignVertical.top, // Aligns text to top
+              textAlignVertical: TextAlignVertical.top,
               decoration: InputDecoration(
                 labelText: "About Me",
-                alignLabelWithHint: true, // Aligns label to top
+                alignLabelWithHint: true, 
                 prefixIcon: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(12.0), // Standard padding
+                      padding: const EdgeInsets.all(12.0), 
                       child: Icon(Icons.info_outline, color: _seaBlueDark),
                     ),
                   ],
@@ -189,7 +236,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 40),
 
-            // --- SAVE BUTTON (Gradient) ---
+            // --- SAVE BUTTON ---
             SizedBox(
               width: double.infinity,
               height: 55,

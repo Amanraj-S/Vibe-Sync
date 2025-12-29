@@ -83,14 +83,17 @@ class ApiService {
     }
   }
 
-  // Update Profile
-  static Future<void> updateProfile(String about, XFile? imageFile) async {
+  // Update Profile (NOW ACCEPTS USERNAME)
+  static Future<void> updateProfile(String username, String about, XFile? imageFile) async {
     final uri = Uri.parse('$baseUrl/users/update');
     final request = http.MultipartRequest('PUT', uri);
     
     final headers = await getHeaders();
     request.headers['Authorization'] = headers['Authorization']!;
-    request.fields['about'] = about;
+    
+    // Add fields to request
+    request.fields['username'] = username; // <--- NEW: Send username
+    request.fields['about'] = about;       // Kept as 'about' (ensure backend maps it to 'desc' if needed)
 
     if (imageFile != null) {
       if (kIsWeb) {
@@ -101,7 +104,11 @@ class ApiService {
     }
 
     final response = await request.send();
-    if (response.statusCode != 200) throw Exception('Update failed');
+    
+    if (response.statusCode != 200) {
+      final respStr = await response.stream.bytesToString();
+      throw Exception('Update failed: $respStr');
+    }
   }
 
   // Get All Users (Search)

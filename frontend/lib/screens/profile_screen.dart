@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 import 'auth_screen.dart';
 import 'edit_profile_screen.dart';
 import 'user_list_screen.dart';
-import '../utils/image_utils.dart'; // <--- REQUIRED: Ensure this file exists
+import '../utils/image_utils.dart'; // <--- Ensure this file exists
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // If null, loads logged-in user. If set, loads that user.
@@ -139,11 +139,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     List followers = userProfile!['followers'] ?? [];
     List following = userProfile!['following'] ?? [];
 
-    // --- 1. PROFILE PICTURE FIX (Uses ImageUtils) ---
+    // --- 1. PROFILE PICTURE LOGIC ---
     String profileUrlRaw = userProfile!['profilePic'] ?? "";
     String validProfileUrl = ImageUtils.getValidImageUrl(profileUrlRaw);
 
-    // --- 2. BIO/ABOUT FIX (Checks 'about' AND 'desc') ---
+    // --- 2. BIO/ABOUT LOGIC ---
     String bioText = userProfile!['about'] ?? userProfile!['desc'] ?? "";
     if (bioText.trim().isEmpty) bioText = "No bio yet.";
 
@@ -190,7 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    // --- 3. SAFE IMAGE LOADING (Prevents White Screen) ---
+                    // --- 3. UPDATED PROFILE PICTURE WIDGET ---
                     child: ClipOval(
                       child: SizedBox(
                         width: 100, // 2x radius
@@ -200,9 +200,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 validProfileUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  // Fallback if image URL is broken (404)
+                                  // This triggers if the URL is broken (404)
                                   return Icon(Icons.person,
                                       size: 50, color: Colors.grey[300]);
+                                },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      color: _seaBlueDark,
+                                      strokeWidth: 2,
+                                    ),
+                                  );
                                 },
                               )
                             : Icon(Icons.person,
@@ -219,7 +228,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 6),
                 
-                // --- DISPLAY CORRECTED BIO ---
+                // --- BIO SECTION ---
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
@@ -332,7 +341,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     itemCount: userPosts.length,
                     itemBuilder: (context, index) {
                       final post = userPosts[index];
-                      // --- USE HELPER FOR POST IMAGES ---
+                      // --- POST IMAGES ---
                       String postImgRaw = post['imageUrl'] ?? "";
                       String validPostImg =
                           ImageUtils.getValidImageUrl(postImgRaw);

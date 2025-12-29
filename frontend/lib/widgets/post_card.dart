@@ -39,30 +39,26 @@ class _PostCardState extends State<PostCard> {
     likeCount = widget.post.likes.length;
   }
 
-  // --- SMART IMAGE URL FIXER (UPDATED FOR RENDER) ---
+  // --- SMART IMAGE URL FIXER ---
   String _getValidImageUrl(String url) {
     if (url.isEmpty) return "";
 
     // 1. RESCUE BROKEN CLOUDINARY LINKS
-    // If the DB has a messy URL containing "vibesync_posts", extract ID and fix it.
     if (url.contains("vibesync_posts") || url.contains("vibesync")) {
       String cleanId = url.split(RegExp(r'vibesync(?:_posts)?/')).last;
-      // Using the Cloud Name you provided in the previous snippet: devq3zfrq
+      // Replace with your actual Cloudinary Cloud Name
       return "https://res.cloudinary.com/devq3zfrq/image/upload/vibesync_posts/$cleanId";
     }
 
     // 2. STANDARD URL HANDLING
-    // If it's already a valid web URL (Cloudinary), return as is.
     if (url.startsWith("http") || url.startsWith("https")) {
-      // If the database accidentally saved "localhost", point it to Render
       if (url.contains("localhost")) {
         return url.replaceFirst("http://localhost:5000", "https://vibe-sync-ijgt.onrender.com");
       }
       return url;
     }
 
-    // 3. HANDLE RELATIVE PATHS (Legacy images)
-    // If the DB has just "uploads/image.png", assume it's on Render
+    // 3. HANDLE RELATIVE PATHS
     return "https://vibe-sync-ijgt.onrender.com/$url";
   }
 
@@ -271,7 +267,7 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Header
+          // 1. Header (FIXED AVATAR)
           ListTile(
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -284,14 +280,26 @@ class _PostCardState extends State<PostCard> {
               child: CircleAvatar(
                 radius: 20,
                 backgroundColor: Colors.white,
-                // --- FIX: APPLIED _getValidImageUrl HERE ---
-                backgroundImage: (widget.post.user.profilePic.isNotEmpty)
-                    ? NetworkImage(
-                        _getValidImageUrl(widget.post.user.profilePic))
-                    : null,
-                child: (widget.post.user.profilePic.isEmpty)
-                    ? const Icon(Icons.person, color: Colors.grey)
-                    : null,
+                // --- FIX STARTS HERE ---
+                // We use ClipOval + Image.network instead of backgroundImage.
+                // This lets us safely catch 404 errors and show the default Icon.
+                child: ClipOval(
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: (widget.post.user.profilePic.isNotEmpty)
+                        ? Image.network(
+                            _getValidImageUrl(widget.post.user.profilePic),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              // If image fails, show Icon
+                              return const Icon(Icons.person, color: Colors.grey);
+                            },
+                          )
+                        : const Icon(Icons.person, color: Colors.grey),
+                  ),
+                ),
+                // --- FIX ENDS HERE ---
               ),
             ),
             title: Text(widget.post.user.username,

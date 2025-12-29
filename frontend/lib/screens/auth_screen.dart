@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart'; // For kIsWeb check
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Add this
 import '../services/api_service.dart';
 import 'layout_screen.dart';
 
@@ -44,6 +45,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Force profile picture on signup
     if (!isLogin && _profileImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Please select a profile picture.")));
@@ -54,34 +56,44 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       if (isLogin) {
+        // --- LOGIN LOGIC ---
         bool success = await ApiService.login(
-            _emailController.text, _passwordController.text);
+            _emailController.text.trim(), _passwordController.text.trim());
+        
         if (success && mounted) {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => const LayoutScreen()));
+          // Double check persistence before navigating
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          if (prefs.getString('token') != null) {
+             Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (_) => const LayoutScreen()));
+          } else {
+             throw Exception("Login failed: Token not saved.");
+          }
         }
       } else {
+        // --- SIGNUP LOGIC ---
         await ApiService.register(
-            _usernameController.text,
-            _emailController.text,
-            _passwordController.text,
-            _aboutController.text,
+            _usernameController.text.trim(),
+            _emailController.text.trim(),
+            _passwordController.text.trim(),
+            _aboutController.text.trim(), // Send Bio/About
             _profileImage);
-
-        setState(() {
-          isLogin = true;
-          _profileImage = null;
-          _emailController.clear();
-          _passwordController.clear();
-          _usernameController.clear();
-          _aboutController.clear();
-        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("Account Created! Please Login."),
             backgroundColor: Colors.green,
           ));
+          
+          // Switch to Login Mode automatically
+          setState(() {
+            isLogin = true;
+            _profileImage = null;
+            // Keep email filled for convenience, clear password
+            _passwordController.clear();
+            _usernameController.clear();
+            _aboutController.clear();
+          });
         }
       }
     } catch (e) {
@@ -94,7 +106,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  // Helper for Gradient Text (Used for App Name)
+  // Helper for Gradient Text
   Widget _buildGradientText(String text, double fontSize) {
     return ShaderMask(
       shaderCallback: (bounds) => _seaBlueGradient.createShader(
@@ -105,7 +117,7 @@ class _AuthScreenState extends State<AuthScreen> {
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
-          color: Colors.white, // Required for ShaderMask
+          color: Colors.white,
           letterSpacing: 1.5,
         ),
       ),
@@ -163,7 +175,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 
                 const SizedBox(height: 10),
                 
-                // --- SUBTITLE (Login / Sign Up) ---
+                // --- SUBTITLE ---
                 Text(
                   isLogin ? "Welcome Back" : "Create Account",
                   style: TextStyle(
@@ -190,6 +202,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           child: CircleAvatar(
                             radius: 50,
                             backgroundColor: Colors.white,
+                            // Proper logic to show picked image or default icon
                             backgroundImage: _profileImage != null
                                 ? (kIsWeb
                                     ? NetworkImage(_profileImage!.path)
@@ -229,7 +242,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   _buildTextField(
                     controller: _aboutController,
-                    label: "Bio",
+                    label: "Bio (About)",
                     icon: Icons.info_outline,
                     validator: (v) => v!.isEmpty ? "Bio required" : null,
                   ),
@@ -253,7 +266,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                 const SizedBox(height: 30),
 
-                // --- MAIN ACTION BUTTON (Gradient) ---
+                // --- MAIN ACTION BUTTON ---
                 SizedBox(
                   width: double.infinity,
                   height: 55,

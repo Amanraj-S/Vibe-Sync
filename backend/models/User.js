@@ -40,6 +40,15 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    
+    // --- NEW FIELD: ABOUT (Fixes the bio storage issue) ---
+    about: {
+      type: String,
+      max: 100,
+      default: "",
+    },
+    // -----------------------------------------------------
+
     desc: {
       type: String,
       max: 50,
@@ -56,6 +65,8 @@ const UserSchema = new mongoose.Schema(
       type: Number,
       enum: [1, 2, 3],
     },
+    
+    // --- REAL-TIME STATUS FIELDS ---
     isOnline: {
       type: Boolean,
       default: false,

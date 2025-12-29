@@ -1,55 +1,70 @@
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs'); // or 'bcrypt' depending on what you installed
 const jwt = require('jsonwebtoken');
 
+// REGISTER
 exports.register = async (req, res) => {
     try {
-        // 1. Get all fields including 'about'
+        // 1. Destructure fields from the request body
+        // 'about' comes from the text fields in your Flutter app
         const { username, email, password, about } = req.body;
+        
         let profilePic = "";
 
-        // 2. Check if an image file was uploaded
+        // 2. Check if an image file was uploaded (handled by Multer/Cloudinary)
         if (req.file) {
-            profilePic = req.file.path;
+            profilePic = req.file.path; // Cloudinary returns the URL in 'path'
         }
 
-        // 3. Check if user already exists 
+        // 3. Check if user already exists
         let existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
 
-        // 4. Hash password
+        // 4. Hash the password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        
-        // 5. Create User
-        const newUser = new User({ 
-            username, 
-            email, 
+
+        // 5. Create the new User object
+        const newUser = new User({
+            username,
+            email,
             password: hashedPassword,
             about: about || "", 
-            profilePic 
+            profilePic: profilePic || "", // Store the image URL
         });
 
-        await newUser.save();
-        res.status(201).json({ message: "User registered successfully" });
+        // 6. Save to Database
+        const savedUser = await newUser.save();
+
+        // 7. Respond with success
+        res.status(201).json(savedUser);
     } catch (err) {
+        console.error("Registration Error:", err);
         res.status(500).json({ error: err.message });
     }
 };
 
+// LOGIN
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        // 1. Check if user exists
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: "User not found" });
 
+        // 2. Validate password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
+        // 3. Create JWT Token
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
-        res.json({ token, user });
+
+        // 4. Send response (exclude password for security)
+        const { password: _, ...userData } = user._doc;
+        res.json({ token, user: userData });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

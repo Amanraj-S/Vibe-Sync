@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import 'auth_screen.dart';
 import 'edit_profile_screen.dart';
 import 'user_list_screen.dart';
+import '../utils/image_utils.dart'; // <--- REQUIRED: Ensure this file exists
 
 class ProfileScreen extends StatefulWidget {
   final String? userId; // If null, loads logged-in user. If set, loads that user.
@@ -138,6 +139,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     List followers = userProfile!['followers'] ?? [];
     List following = userProfile!['following'] ?? [];
 
+    // --- 1. PROFILE PICTURE FIX (Uses ImageUtils) ---
+    String profileUrlRaw = userProfile!['profilePic'] ?? "";
+    String validProfileUrl = ImageUtils.getValidImageUrl(profileUrlRaw);
+
+    // --- 2. BIO/ABOUT FIX (Checks 'about' AND 'desc') ---
+    String bioText = userProfile!['about'] ?? userProfile!['desc'] ?? "";
+    if (bioText.trim().isEmpty) bioText = "No bio yet.";
+
     return Scaffold(
       backgroundColor: Colors.white, // Solid White Background
       appBar: AppBar(
@@ -181,14 +190,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    backgroundImage: (userProfile!['profilePic'] != null &&
-                            userProfile!['profilePic'] != "")
-                        ? NetworkImage(userProfile!['profilePic'])
-                        : null,
-                    child: (userProfile!['profilePic'] == null ||
-                            userProfile!['profilePic'] == "")
-                        ? Icon(Icons.person, size: 50, color: Colors.grey[300])
-                        : null,
+                    // --- 3. SAFE IMAGE LOADING (Prevents White Screen) ---
+                    child: ClipOval(
+                      child: SizedBox(
+                        width: 100, // 2x radius
+                        height: 100,
+                        child: (validProfileUrl.isNotEmpty)
+                            ? Image.network(
+                                validProfileUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Fallback if image URL is broken (404)
+                                  return Icon(Icons.person,
+                                      size: 50, color: Colors.grey[300]);
+                                },
+                              )
+                            : Icon(Icons.person,
+                                size: 50, color: Colors.grey[300]),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -198,10 +218,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
+                
+                // --- DISPLAY CORRECTED BIO ---
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Text(
-                    userProfile!['about'] ?? "No bio yet.",
+                    bioText,
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
@@ -310,6 +332,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     itemCount: userPosts.length,
                     itemBuilder: (context, index) {
                       final post = userPosts[index];
+                      // --- USE HELPER FOR POST IMAGES ---
+                      String postImgRaw = post['imageUrl'] ?? "";
+                      String validPostImg =
+                          ImageUtils.getValidImageUrl(postImgRaw);
+
                       return GestureDetector(
                         onTap: () {
                           // Show Post Detail
@@ -324,7 +351,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ClipRRect(
                                           borderRadius:
                                               BorderRadius.circular(12),
-                                          child: Image.network(post['imageUrl']),
+                                          child: Image.network(
+                                            validPostImg,
+                                            errorBuilder: (ctx, err, stack) =>
+                                                Container(color: Colors.grey),
+                                          ),
                                         ),
                                         if (isMe)
                                           Positioned(
@@ -345,8 +376,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ),
                                   ));
                         },
-                        child: post['imageUrl'] != null
-                            ? Image.network(post['imageUrl'], fit: BoxFit.cover)
+                        // Post Thumbnail
+                        child: validPostImg.isNotEmpty
+                            ? Image.network(
+                                validPostImg,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(color: Colors.grey[200]);
+                                },
+                              )
                             : Container(color: Colors.grey[100]),
                       );
                     },

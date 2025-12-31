@@ -73,12 +73,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
-        centerTitle: false, // Left align looks better for Feed titles usually, or true for branding
+        centerTitle: false, 
         title: _buildGradientText("VibeSync", 26), // Gradient App Name
         actions: [
           IconButton(
@@ -104,20 +107,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.dynamic_feed_rounded, size: 80, color: Colors.grey[300]),
+                              Icon(Icons.dynamic_feed_rounded, size: 80, color: theme.dividerColor), // <--- DYNAMIC ICON COLOR
                               const SizedBox(height: 16),
                               Text(
                                 "No vibes yet!",
                                 style: TextStyle(
                                   fontSize: 20, 
                                   fontWeight: FontWeight.bold, 
-                                  color: Colors.grey[500]
+                                  color: theme.hintColor // <--- DYNAMIC TEXT COLOR
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 "Be the first to share something cool.",
-                                style: TextStyle(color: Colors.grey[400]),
+                                style: TextStyle(color: theme.hintColor), // <--- DYNAMIC SUBTEXT
                               ),
                             ],
                           ),

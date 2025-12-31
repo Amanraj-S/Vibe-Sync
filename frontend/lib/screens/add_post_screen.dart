@@ -75,14 +75,17 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.iconTheme.color), // <--- DYNAMIC ICON
           onPressed: () => Navigator.pop(context),
         ),
         title: _buildGradientText("New Post", 22), // Gradient Title
@@ -97,7 +100,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
+                color: theme.hintColor, // <--- DYNAMIC TEXT COLOR
               ),
             ),
             const SizedBox(height: 20),
@@ -109,7 +112,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 height: 250,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey[100], // Matches Auth Input Fields
+                  color: theme.cardColor, // <--- DYNAMIC CONTAINER BG
                   borderRadius: BorderRadius.circular(16),
                   image: _image != null
                       ? DecorationImage(
@@ -129,7 +132,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                           const SizedBox(height: 10),
                           Text(
                             "Tap to select photo",
-                            style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                            style: TextStyle(color: theme.hintColor, fontSize: 16), // <--- DYNAMIC HINT
                           ),
                         ],
                       )
@@ -143,11 +146,13 @@ class _AddPostScreenState extends State<AddPostScreen> {
             TextField(
               controller: _descController,
               maxLines: 4,
+              style: TextStyle(color: theme.colorScheme.onSurface), // <--- INPUT TEXT COLOR
               decoration: InputDecoration(
                 labelText: "Caption",
+                labelStyle: TextStyle(color: theme.hintColor),
                 alignLabelWithHint: true,
                 hintText: "Write a caption...",
-                hintStyle: TextStyle(color: Colors.grey[400]),
+                hintStyle: TextStyle(color: theme.hintColor), // <--- DYNAMIC HINT
                 prefixIcon: Padding(
                   padding: const EdgeInsets.only(bottom: 60), // Align icon to top
                   child: Icon(Icons.edit_note, color: _seaBlueDark),
@@ -157,7 +162,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[100], // Matches Auth Input Fields
+                fillColor: theme.inputDecorationTheme.fillColor, // <--- DYNAMIC FILL
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               ),
@@ -199,7 +204,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Colors.white, // White text on gradient is always fine
                               letterSpacing: 1.2,
                             ),
                           ),

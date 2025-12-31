@@ -16,9 +16,6 @@ class _LayoutScreenState extends State<LayoutScreen> {
   int _page = 0;
   late PageController pageController;
 
-  // --- SEA BLUE THEME COLORS ---
-  final Color _seaBlueDark = const Color(0xFF006994);
-
   @override
   void initState() {
     super.initState();
@@ -38,8 +35,12 @@ class _LayoutScreenState extends State<LayoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       body: PageView(
         controller: pageController,
         onPageChanged: onPageChanged,
@@ -53,38 +54,49 @@ class _LayoutScreenState extends State<LayoutScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5), // Shadow upwards
+          color: theme.cardColor, // <--- DYNAMIC BAR BG
+          border: Border(
+            top: BorderSide(
+              color: theme.dividerColor, // <--- DYNAMIC BORDER
+              width: 0.5,
             ),
+          ),
+          boxShadow: [
+            // Only show shadow in Light Mode (Shadows look bad in true dark mode)
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
           ],
         ),
         child: NavigationBarTheme(
           data: NavigationBarThemeData(
-            backgroundColor: Colors.white,
-            indicatorColor: _seaBlueDark.withOpacity(0.1), // Subtle pill bg
+            backgroundColor: theme.cardColor, // <--- DYNAMIC BG
+            indicatorColor: theme.primaryColor.withOpacity(0.1), // <--- DYNAMIC INDICATOR
             labelTextStyle: MaterialStateProperty.resolveWith((states) {
               if (states.contains(MaterialState.selected)) {
                 return TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: _seaBlueDark,
+                  color: theme.primaryColor, // <--- DYNAMIC SELECTED LABEL
                 );
               }
               return TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey[500],
+                color: isDark ? Colors.grey[500] : Colors.grey[600], // <--- DYNAMIC UNSELECTED
               );
             }),
             iconTheme: MaterialStateProperty.resolveWith((states) {
               if (states.contains(MaterialState.selected)) {
-                return IconThemeData(color: _seaBlueDark, size: 26);
+                return IconThemeData(
+                    color: theme.primaryColor, size: 26); // <--- DYNAMIC SELECTED ICON
               }
-              return IconThemeData(color: Colors.grey[500], size: 24);
+              return IconThemeData(
+                  color: isDark ? Colors.grey[500] : Colors.grey[500],
+                  size: 24); // <--- DYNAMIC UNSELECTED ICON
             }),
           ),
           child: NavigationBar(
@@ -92,6 +104,7 @@ class _LayoutScreenState extends State<LayoutScreen> {
             elevation: 0,
             selectedIndex: _page,
             onDestinationSelected: navigationTapped,
+            backgroundColor: theme.cardColor, // <--- ENSURE BG MATCHES
             destinations: const [
               NavigationDestination(
                 icon: Icon(Icons.home_outlined),

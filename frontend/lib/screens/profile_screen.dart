@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // <--- Import Provider for Theme Toggle
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'auth_screen.dart';
 import 'edit_profile_screen.dart';
 import 'user_list_screen.dart';
-import '../utils/image_utils.dart'; // <--- Ensure this file exists
+import '../utils/image_utils.dart';
+import '../providers/theme_provider.dart'; // <--- Import ThemeProvider
 
 class ProfileScreen extends StatefulWidget {
-  final String? userId; // If null, loads logged-in user. If set, loads that user.
+  final String? userId; 
 
   const ProfileScreen({super.key, this.userId});
 
@@ -61,54 +63,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // ... (Keep your existing _showConnections, _handleDeletePost, _handleDeleteAccount helper methods here)
   void _showConnections(String type) async {
     if (userProfile == null) return;
     try {
-      final connections =
-          await ApiService.getUserConnections(userProfile!['_id']);
+      final connections = await ApiService.getUserConnections(userProfile!['_id']);
       if (!mounted) return;
-
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => UserListScreen(
-                    title: type,
-                    users: type == "Followers"
-                        ? connections['followers']
-                        : connections['following'],
-                  )));
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Could not load list")));
-    }
+      Navigator.push(context, MaterialPageRoute(builder: (_) => UserListScreen(title: type, users: type == "Followers" ? connections['followers'] : connections['following'])));
+    } catch (e) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not load list"))); }
   }
 
   void _handleDeletePost(String postId) async {
-    try {
-      await ApiService.deletePost(postId);
-      Navigator.pop(context);
-      _loadData();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Post deleted")));
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Failed to delete post")));
-    }
+    try { await ApiService.deletePost(postId); Navigator.pop(context); _loadData(); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Post deleted"))); } 
+    catch (e) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to delete post"))); }
   }
 
   void _handleDeleteAccount() async {
-    try {
-      await ApiService.deleteAccount();
-      if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const AuthScreen()),
-          (route) => false);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to delete account")));
-    }
+    try { await ApiService.deleteAccount(); if (!mounted) return; Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AuthScreen()), (route) => false); } 
+    catch (e) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Failed to delete account"))); }
   }
+  // ...
 
   Widget _buildGradientText(String text, double fontSize) {
     return ShaderMask(
@@ -128,6 +102,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME FOR DARK MODE ---
+    final theme = Theme.of(context); 
+    
+    // --- HELPER FOR SUBTEXT COLOR ---
+    // If it's dark mode, use a lighter grey for readability
+    final Color subTextColor = theme.brightness == Brightness.dark 
+        ? Colors.grey[400]! 
+        : Colors.grey[600]!;
+
     if (isLoading)
       return Scaffold(
           body: Center(child: CircularProgressIndicator(color: _seaBlueDark)));
@@ -138,24 +121,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     List followers = userProfile!['followers'] ?? [];
     List following = userProfile!['following'] ?? [];
 
-    // --- 1. PROFILE PICTURE LOGIC ---
     String profileUrlRaw = userProfile!['profilePic'] ?? "";
     String validProfileUrl = ImageUtils.getValidImageUrl(profileUrlRaw);
 
-    // --- 2. BIO/ABOUT LOGIC ---
     String bioText = userProfile!['about'] ?? userProfile!['desc'] ?? "";
     if (bioText.trim().isEmpty) bioText = "No bio yet.";
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: theme.iconTheme, // <--- DYNAMIC ICONS
         title: _buildGradientText(
             userProfile!['username'] ?? "Profile", 20),
         actions: [
+          // --- DARK MODE TOGGLE ---
+          if (isMe)
+            IconButton(
+              icon: Icon(
+                Provider.of<ThemeProvider>(context).isDarkMode 
+                    ? Icons.light_mode 
+                    : Icons.dark_mode,
+                color: Provider.of<ThemeProvider>(context).isDarkMode 
+                    ? Colors.amber 
+                    : Colors.grey[600],
+              ),
+              onPressed: () {
+                final provider = Provider.of<ThemeProvider>(context, listen: false);
+                provider.toggleTheme(!provider.isDarkMode);
+              },
+            ),
+          
           if (isMe)
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.redAccent),
@@ -187,33 +185,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundColor: Colors.white,
-                    // --- 3. ROBUST IMAGE DISPLAY ---
+                    backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                     child: ClipOval(
                       child: SizedBox(
-                        width: 100, // 2x radius
+                        width: 100, 
                         height: 100,
                         child: (validProfileUrl.isNotEmpty)
                             ? Image.network(
                                 validProfileUrl,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  // Fallback if image fails to load (404)
-                                  return Icon(Icons.person,
-                                      size: 50, color: Colors.grey[300]);
-                                },
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                      color: _seaBlueDark,
-                                      strokeWidth: 2,
-                                    ),
-                                  );
+                                  return Icon(Icons.person, size: 50, color: Colors.grey[300]);
                                 },
                               )
-                            : Icon(Icons.person,
-                                size: 50, color: Colors.grey[300]),
+                            : Icon(Icons.person, size: 50, color: Colors.grey[300]),
                       ),
                     ),
                   ),
@@ -221,8 +206,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 16),
                 Text(
                   userProfile!['username'] ?? "Unknown",
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: 22, 
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface // <--- DYNAMIC TEXT COLOR
+                  ),
                 ),
                 const SizedBox(height: 6),
                 
@@ -232,7 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Text(
                     bioText,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    style: TextStyle(color: subTextColor, fontSize: 14), // <--- DYNAMIC SUBTEXT
                   ),
                 ),
               ],
@@ -244,13 +232,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatItem("Posts", userPosts.length.toString(), null),
-                Container(width: 1, height: 40, color: Colors.grey[200]),
+                _buildStatItem("Posts", userPosts.length.toString(), null, theme, subTextColor),
+                Container(width: 1, height: 40, color: theme.dividerColor), // <--- DYNAMIC DIVIDER
                 _buildStatItem("Followers", followers.length.toString(),
-                    () => _showConnections("Followers")),
-                Container(width: 1, height: 40, color: Colors.grey[200]),
+                    () => _showConnections("Followers"), theme, subTextColor),
+                Container(width: 1, height: 40, color: theme.dividerColor), // <--- DYNAMIC DIVIDER
                 _buildStatItem("Following", following.length.toString(),
-                    () => _showConnections("Following")),
+                    () => _showConnections("Following"), theme, subTextColor),
               ],
             ),
 
@@ -286,7 +274,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ? null
                               : _seaBlueGradient,
                           color: followers.contains(currentUserId)
-                              ? Colors.grey[200]
+                              ? theme.cardColor // <--- DYNAMIC BUTTON BG
                               : null,
                         ),
                         child: ElevatedButton(
@@ -298,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
                             foregroundColor: followers.contains(currentUserId)
-                                ? Colors.black
+                                ? theme.colorScheme.onSurface // <--- DYNAMIC TEXT
                                 : Colors.white,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12)),
@@ -320,10 +308,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       children: [
                         Icon(Icons.grid_off_rounded,
-                            size: 60, color: Colors.grey[200]),
+                            size: 60, color: theme.dividerColor), // <--- DYNAMIC ICON
                         const SizedBox(height: 10),
                         Text("No posts yet",
-                            style: TextStyle(color: Colors.grey[400])),
+                            style: TextStyle(color: subTextColor)), // <--- DYNAMIC TEXT
                       ],
                     ),
                   )
@@ -341,11 +329,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       final post = userPosts[index];
                       // --- POST IMAGES ---
                       String postImgRaw = post['imageUrl'] ?? "";
-                      String validPostImg =
-                          ImageUtils.getValidImageUrl(postImgRaw);
+                      String validPostImg = ImageUtils.getValidImageUrl(postImgRaw);
 
                       return GestureDetector(
                         onTap: () {
+                          // ... (Keep existing showDialog logic here) ...
                           showDialog(
                               context: context,
                               builder: (_) => Dialog(
@@ -355,26 +343,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       alignment: Alignment.center,
                                       children: [
                                         ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(12),
                                           child: Image.network(
                                             validPostImg,
-                                            errorBuilder: (ctx, err, stack) =>
-                                                Container(color: Colors.grey),
+                                            errorBuilder: (ctx, err, stack) => Container(color: theme.cardColor),
                                           ),
                                         ),
                                         if (isMe)
                                           Positioned(
-                                            top: 10,
-                                            right: 10,
+                                            top: 10, right: 10,
                                             child: CircleAvatar(
-                                              backgroundColor: Colors.white,
+                                              backgroundColor: theme.cardColor,
                                               child: IconButton(
-                                                icon: const Icon(Icons.delete,
-                                                    color: Colors.red),
-                                                onPressed: () =>
-                                                    _handleDeletePost(
-                                                        post['_id']),
+                                                icon: const Icon(Icons.delete, color: Colors.red),
+                                                onPressed: () => _handleDeletePost(post['_id']),
                                               ),
                                             ),
                                           ),
@@ -387,10 +369,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 validPostImg,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return Container(color: Colors.grey[200]);
+                                  return Container(color: theme.cardColor); // <--- DYNAMIC PLACEHOLDER
                                 },
                               )
-                            : Container(color: Colors.grey[100]),
+                            : Container(color: theme.cardColor), // <--- DYNAMIC PLACEHOLDER
                       );
                     },
                   ),
@@ -403,20 +385,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: const EdgeInsets.only(bottom: 30.0),
                 child: TextButton(
                   onPressed: () {
+                    // ... (Keep delete dialog logic) ...
                     showDialog(
                         context: context,
                         builder: (_) => AlertDialog(
-                              title: const Text("Delete Account?"),
-                              content: const Text(
-                                  "This action cannot be undone. All your posts will be permanently removed."),
+                              backgroundColor: theme.cardColor, // <--- DYNAMIC DIALOG BG
+                              title: Text("Delete Account?", style: TextStyle(color: theme.colorScheme.onSurface)),
+                              content: Text(
+                                  "This action cannot be undone. All your posts will be permanently removed.",
+                                  style: TextStyle(color: subTextColor)),
                               actions: [
                                 TextButton(
                                     onPressed: () => Navigator.pop(context),
-                                    child: const Text("Cancel")),
+                                    child: Text("Cancel", style: TextStyle(color: subTextColor))),
                                 TextButton(
                                     onPressed: _handleDeleteAccount,
-                                    child: const Text("DELETE",
-                                        style: TextStyle(color: Colors.red))),
+                                    child: const Text("DELETE", style: TextStyle(color: Colors.red))),
                               ],
                             ));
                   },
@@ -430,7 +414,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, VoidCallback? onTap) {
+  // Helper updated to accept Theme and Color
+  Widget _buildStatItem(String label, String value, VoidCallback? onTap, ThemeData theme, Color subTextColor) {
     return InkWell(
       onTap: onTap,
       splashColor: Colors.transparent,
@@ -438,10 +423,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         children: [
           Text(value,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              style: TextStyle(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold, 
+                  color: theme.colorScheme.onSurface // <--- DYNAMIC VALUE COLOR
+              )),
           const SizedBox(height: 2),
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          Text(label, style: TextStyle(color: subTextColor, fontSize: 13)), // <--- DYNAMIC LABEL COLOR
         ],
       ),
     );

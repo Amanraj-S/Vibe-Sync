@@ -36,14 +36,17 @@ class UserListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.iconTheme.color), // <--- DYNAMIC ICON
           onPressed: () => Navigator.pop(context),
         ),
         title: _buildGradientText(title, 22), // Gradient Title
@@ -54,11 +57,11 @@ class UserListScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.group_off_rounded,
-                      size: 80, color: Colors.grey[200]),
+                      size: 80, color: theme.dividerColor), // <--- DYNAMIC ICON
                   const SizedBox(height: 16),
                   Text(
                     "No users found",
-                    style: TextStyle(fontSize: 18, color: Colors.grey[400]),
+                    style: TextStyle(fontSize: 18, color: theme.hintColor), // <--- DYNAMIC TEXT
                   ),
                 ],
               ),
@@ -67,7 +70,7 @@ class UserListScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10),
               itemCount: users.length,
               separatorBuilder: (ctx, i) => Divider(
-                color: Colors.grey[100],
+                color: theme.dividerColor, // <--- DYNAMIC DIVIDER
                 height: 1,
                 indent: 80,
                 endIndent: 20,
@@ -93,29 +96,29 @@ class UserListScreen extends StatelessWidget {
                     ),
                     child: CircleAvatar(
                       radius: 24,
-                      backgroundColor: Colors.white,
+                      backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                       backgroundImage: (profilePic.isNotEmpty)
                           ? NetworkImage(profilePic)
                           : null,
                       child: (profilePic.isEmpty)
-                          ? const Icon(Icons.person, color: Colors.grey)
+                          ? Icon(Icons.person, color: theme.iconTheme.color) // <--- DYNAMIC ICON
                           : null,
                     ),
                   ),
                   title: Text(
                     username,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      color: Colors.black87,
+                      color: theme.colorScheme.onSurface, // <--- DYNAMIC TEXT COLOR
                     ),
                   ),
                   subtitle: Text(
                     "Tap to view profile",
-                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    style: TextStyle(color: theme.hintColor, fontSize: 12), // <--- DYNAMIC SUBTEXT
                   ),
                   trailing: Icon(Icons.arrow_forward_ios_rounded,
-                      size: 16, color: Colors.grey[300]),
+                      size: 16, color: theme.dividerColor), // <--- DYNAMIC TRAILING ICON
                   onTap: () {
                     // Navigate to their profile
                     Navigator.push(

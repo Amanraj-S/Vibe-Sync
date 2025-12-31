@@ -158,14 +158,18 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.iconTheme.color), // <--- DYNAMIC ICON
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
@@ -179,12 +183,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               ),
               child: CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.white,
+                backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                 backgroundImage: widget.targetUser.profilePic.isNotEmpty
                     ? NetworkImage(widget.targetUser.profilePic)
                     : null,
                 child: widget.targetUser.profilePic.isEmpty
-                    ? const Icon(Icons.person, size: 20, color: Colors.grey)
+                    ? Icon(Icons.person, size: 20, color: isDark ? Colors.grey[400] : Colors.grey)
                     : null,
               ),
             ),
@@ -236,7 +240,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     decoration: BoxDecoration(
                       // WHATSAPP CONCEPT: Colored for me, Grey/White for others
                       gradient: isMe ? _seaBlueGradient : null,
-                      color: isMe ? null : Colors.grey[100],
+                      // DYNAMIC BUBBLE COLOR:
+                      // If it's receiver (not me) AND dark mode, use Dark Grey.
+                      // If light mode, use Light Grey.
+                      color: isMe 
+                          ? null 
+                          : (isDark ? const Color(0xFF2C2C2C) : Colors.grey[100]),
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(16),
                         topRight: const Radius.circular(16),
@@ -253,7 +262,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                     child: Text(
                       msg.text,
                       style: TextStyle(
-                        color: isMe ? Colors.white : Colors.black87,
+                        // DYNAMIC TEXT COLOR:
+                        // Me: White. Receiver: White (Dark Mode) or Black (Light Mode)
+                        color: isMe 
+                            ? Colors.white 
+                            : theme.colorScheme.onSurface,
                         fontSize: 15,
                       ),
                     ),
@@ -267,7 +280,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.cardColor, // <--- DYNAMIC BG
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -282,11 +295,12 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
+                      style: TextStyle(color: theme.colorScheme.onSurface), // <--- INPUT TEXT COLOR
                       decoration: InputDecoration(
                         hintText: "Type a message...",
-                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        hintStyle: TextStyle(color: theme.hintColor), // <--- DYNAMIC HINT
                         filled: true,
-                        fillColor: Colors.grey[100],
+                        fillColor: theme.inputDecorationTheme.fillColor, // <--- DYNAMIC FILL
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 12),
                         border: OutlineInputBorder(

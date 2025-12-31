@@ -18,7 +18,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   bool isLoading = true;
   String? myId;
 
-  // --- SEA BLUE THEME COLORS ---
+  // --- SEA BLUE THEME COLORS (Keep for specific UI elements) ---
   final Color _seaBlueLight = const Color(0xFF0093AF);
   final Color _seaBlueDark = const Color(0xFF006994);
 
@@ -147,10 +147,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+    
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
         centerTitle: true,
         title: _buildGradientText("Chats", 22),
@@ -163,19 +166,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.chat_bubble_outline_rounded,
-                          size: 80, color: Colors.grey[300]),
+                          size: 80, color: theme.dividerColor), // <--- DYNAMIC ICON COLOR
                       const SizedBox(height: 16),
                       Text(
                         "No chats yet",
                         style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w500,
-                            color: Colors.grey[500]),
+                            color: theme.hintColor), // <--- DYNAMIC TEXT
                       ),
                       const SizedBox(height: 8),
                       Text(
                         "Follow people to start chatting!",
-                        style: TextStyle(color: Colors.grey[400]),
+                        style: TextStyle(color: theme.hintColor), // <--- DYNAMIC SUBTEXT
                       ),
                     ],
                   ),
@@ -184,7 +187,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   padding: const EdgeInsets.only(top: 10),
                   itemCount: following.length,
                   separatorBuilder: (ctx, i) => Divider(
-                    color: Colors.grey[100],
+                    color: theme.dividerColor, // <--- DYNAMIC DIVIDER
                     height: 1,
                     indent: 80, 
                     endIndent: 20,
@@ -207,13 +210,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             ),
                             child: CircleAvatar(
                               radius: 26,
-                              backgroundColor: Colors.white,
+                              backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                               backgroundImage: (user.profilePic.isNotEmpty)
                                   ? NetworkImage(user.profilePic)
                                   : null,
                               child: (user.profilePic.isEmpty)
-                                  ? const Icon(Icons.person,
-                                      color: Colors.grey)
+                                  ? Icon(Icons.person,
+                                      color: theme.iconTheme.color) // <--- DYNAMIC ICON
                                   : null,
                             ),
                           ),
@@ -229,7 +232,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                                   color: Colors.green,
                                   shape: BoxShape.circle,
                                   border:
-                                      Border.all(color: Colors.white, width: 2),
+                                      Border.all(color: theme.scaffoldBackgroundColor, width: 2), // <--- MATCH BG
                                 ),
                               ),
                             )
@@ -240,7 +243,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         style: TextStyle(
                           fontWeight: unread > 0 ? FontWeight.bold : FontWeight.w600,
                           fontSize: 16,
-                          color: Colors.black87,
+                          color: theme.colorScheme.onSurface, // <--- DYNAMIC TEXT COLOR
                         ),
                       ),
                       subtitle: Padding(
@@ -249,7 +252,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           children: [
                             if (!user.isOnline)
                               Icon(Icons.access_time,
-                                  size: 14, color: Colors.grey[400]),
+                                  size: 14, color: theme.hintColor), // <--- DYNAMIC ICON
                             if (!user.isOnline) const SizedBox(width: 4),
                             Text(
                               user.isOnline
@@ -258,7 +261,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                               style: TextStyle(
                                 color: user.isOnline
                                     ? Colors.green
-                                    : Colors.grey[500],
+                                    : theme.hintColor, // <--- DYNAMIC SUBTEXT
                                 fontWeight: user.isOnline
                                     ? FontWeight.w600
                                     : FontWeight.normal,
@@ -290,7 +293,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             )
                           else
                             Icon(Icons.arrow_forward_ios_rounded,
-                                size: 16, color: Colors.grey[300]),
+                                size: 16, color: theme.dividerColor), // <--- DYNAMIC ARROW
                         ],
                       ),
                       onTap: () {

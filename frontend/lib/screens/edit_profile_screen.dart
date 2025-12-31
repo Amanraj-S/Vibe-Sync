@@ -12,7 +12,7 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  // 1. Add Username Controller
+  // 1. Controllers
   final _usernameController = TextEditingController();
   final _aboutController = TextEditingController();
   
@@ -20,7 +20,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _currentProfilePic; 
   bool _isLoading = false;
 
-  // --- SEA BLUE THEME COLORS ---
+  // --- SEA BLUE THEME COLORS (Keep for Gradient) ---
   final Color _seaBlueLight = const Color(0xFF0093AF);
   final Color _seaBlueDark = const Color(0xFF006994);
 
@@ -47,9 +47,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final profile = await ApiService.getMyProfile();
       setState(() {
-        // 2. Pre-fill Username
         _usernameController.text = profile['username'] ?? '';
-        _aboutController.text = profile['about'] ?? profile['desc'] ?? ''; // Handle both 'about' or 'desc' keys
+        _aboutController.text = profile['about'] ?? profile['desc'] ?? ''; 
         _currentProfilePic = profile['profilePic'];
       });
     } catch (e) {
@@ -74,7 +73,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     setState(() => _isLoading = true);
     try {
-      // 3. Pass username to API
       await ApiService.updateProfile(
         _usernameController.text.trim(), 
         _aboutController.text.trim(), 
@@ -113,26 +111,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME FOR DARK MODE ---
+    final theme = Theme.of(context);
+
+    // Determine Image Logic
     ImageProvider? backgroundImage;
     if (_imageFile != null) {
       backgroundImage = kIsWeb
           ? NetworkImage(_imageFile!.path)
           : FileImage(File(_imageFile!.path)) as ImageProvider;
     } else if (_currentProfilePic != null && _currentProfilePic!.isNotEmpty) {
-      // Ensure you are using your ImageUtils if needed, or direct network
-      // If you have the ImageUtils helper, wrap this: ImageUtils.getValidImageUrl(_currentProfilePic!)
-      // For now, assuming standard logic:
       backgroundImage = NetworkImage(_currentProfilePic!);
     }
 
     return Scaffold(
-      backgroundColor: Colors.white, 
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.iconTheme.color), // <--- DYNAMIC ICON
           onPressed: () => Navigator.pop(context),
         ),
         title: _buildGradientText("Edit Profile", 22),
@@ -156,10 +155,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     child: CircleAvatar(
                       radius: 60,
-                      backgroundColor: Colors.white,
+                      backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                       backgroundImage: backgroundImage,
                       child: (backgroundImage == null)
-                          ? Icon(Icons.person, size: 60, color: Colors.grey[300])
+                          ? Icon(Icons.person, size: 60, color: Colors.grey[400])
                           : null,
                     ),
                   ),
@@ -171,7 +170,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: _seaBlueGradient,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: theme.scaffoldBackgroundColor, width: 2), // <--- MATCHES BG
                       ),
                       child: const Icon(Icons.camera_alt,
                           color: Colors.white, size: 20),
@@ -183,11 +182,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 40),
 
-            // --- 4. USERNAME INPUT ---
+            // --- 4. USERNAME INPUT (DARK MODE READY) ---
             TextField(
               controller: _usernameController,
+              style: TextStyle(color: theme.colorScheme.onSurface), // <--- TEXT COLOR
               decoration: InputDecoration(
                 labelText: "Username",
+                labelStyle: TextStyle(color: theme.hintColor), // <--- HINT COLOR
                 prefixIcon: Padding(
                   padding: const EdgeInsets.all(12.0),
                   child: Icon(Icons.person_outline, color: _seaBlueDark),
@@ -197,7 +198,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: theme.inputDecorationTheme.fillColor, // <--- DYNAMIC FILL
                 contentPadding: const EdgeInsets.symmetric(
                     vertical: 16, horizontal: 16),
               ),
@@ -205,13 +206,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 20),
 
-            // --- ABOUT ME INPUT ---
+            // --- ABOUT ME INPUT (DARK MODE READY) ---
             TextField(
               controller: _aboutController,
+              style: TextStyle(color: theme.colorScheme.onSurface), // <--- TEXT COLOR
               maxLines: 4,
               textAlignVertical: TextAlignVertical.top,
               decoration: InputDecoration(
                 labelText: "About Me",
+                labelStyle: TextStyle(color: theme.hintColor), // <--- HINT COLOR
                 alignLabelWithHint: true, 
                 prefixIcon: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -228,7 +231,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: theme.inputDecorationTheme.fillColor, // <--- DYNAMIC FILL
                 contentPadding: const EdgeInsets.symmetric(
                     vertical: 16, horizontal: 16),
               ),
@@ -236,7 +239,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             const SizedBox(height: 40),
 
-            // --- SAVE BUTTON ---
+            // --- SAVE BUTTON (Gradient) ---
             SizedBox(
               width: double.infinity,
               height: 55,

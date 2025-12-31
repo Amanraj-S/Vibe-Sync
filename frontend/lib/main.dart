@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // <--- Required for state management
+import 'package:provider/provider.dart'; // <--- Required for ThemeProvider
 import 'package:shared_preferences/shared_preferences.dart';
-import 'providers/theme_provider.dart'; // <--- Import your new ThemeProvider
+import 'providers/theme_provider.dart'; // <--- Import your ThemeProvider
 import 'screens/auth_screen.dart';
 import 'screens/layout_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 1. Check Login Status
+  // 1. Check Login Status (Token)
   SharedPreferences prefs = await SharedPreferences.getInstance();
   String? token = prefs.getString('token');
 
@@ -17,6 +17,7 @@ void main() async {
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
       child: MyApp(
+        // Decide start screen based on login status
         startScreen: token != null ? const LayoutScreen() : const AuthScreen(),
       ),
     ),
@@ -37,7 +38,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
 
       // --- THEME CONFIGURATION ---
-      // This tells Flutter which theme to use based on the provider
+      // This forces the app to rebuild whenever themeProvider changes
       themeMode: themeProvider.themeMode, 
       theme: ThemeProvider.lightTheme,
       darkTheme: ThemeProvider.darkTheme,

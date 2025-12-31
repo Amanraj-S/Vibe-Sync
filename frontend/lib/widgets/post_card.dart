@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 import '../services/api_service.dart';
-import '../utils/image_utils.dart'; // <--- IMPORT THE HELPER
+import '../utils/image_utils.dart'; // Ensure this exists
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -118,10 +118,11 @@ class _PostCardState extends State<PostCard> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).cardColor, // <--- DYNAMIC MODAL BG
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
+        final theme = Theme.of(context);
         return Padding(
           padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
@@ -149,10 +150,10 @@ class _PostCardState extends State<PostCard> {
                 constraints: BoxConstraints(
                     maxHeight: MediaQuery.of(context).size.height * 0.4),
                 child: widget.post.comments.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(20),
+                    ? Padding(
+                        padding: const EdgeInsets.all(20),
                         child: Text("No comments yet.",
-                            style: TextStyle(color: Colors.grey)))
+                            style: TextStyle(color: theme.hintColor))) // DYNAMIC TEXT
                     : ListView.builder(
                         shrinkWrap: true,
                         itemCount: widget.post.comments.length,
@@ -167,9 +168,12 @@ class _PostCardState extends State<PostCard> {
                                   size: 16, color: Colors.grey),
                             ),
                             title: Text(c.username,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 13)),
-                            subtitle: Text(c.text),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, 
+                                    fontSize: 13,
+                                    color: theme.colorScheme.onSurface)), // DYNAMIC TEXT
+                            subtitle: Text(c.text, 
+                                style: TextStyle(color: theme.colorScheme.onSurface)), // DYNAMIC TEXT
                           );
                         },
                       ),
@@ -180,10 +184,11 @@ class _PostCardState extends State<PostCard> {
                   Expanded(
                     child: TextField(
                       controller: commentController,
+                      style: TextStyle(color: theme.colorScheme.onSurface), // DYNAMIC INPUT TEXT
                       decoration: InputDecoration(
                         hintText: "Add a comment...",
                         filled: true,
-                        fillColor: Colors.grey[100],
+                        fillColor: theme.inputDecorationTheme.fillColor, // DYNAMIC FILL
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 10),
                         border: OutlineInputBorder(
@@ -228,6 +233,7 @@ class _PostCardState extends State<PostCard> {
   @override
   Widget build(BuildContext context) {
     final bool isOwner = widget.post.user.id == widget.currentUserId;
+    final theme = Theme.of(context); // <--- ACCESS CURRENT THEME
 
     // --- USE IMAGE UTILS HELPER HERE ---
     String profilePicUrl = widget.post.user.profilePic;
@@ -239,7 +245,7 @@ class _PostCardState extends State<PostCard> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor, // <--- DYNAMIC BACKGROUND COLOR
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -264,7 +270,7 @@ class _PostCardState extends State<PostCard> {
               ),
               child: CircleAvatar(
                 radius: 20,
-                backgroundColor: Colors.white,
+                backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                 child: ClipOval(
                   child: SizedBox(
                     width: 40,
@@ -283,8 +289,11 @@ class _PostCardState extends State<PostCard> {
               ),
             ),
             title: Text(widget.post.user.username,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 15)),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 15,
+                    color: theme.colorScheme.onSurface // <--- DYNAMIC TEXT COLOR
+                )),
             subtitle: Text(_timeAgo(widget.post.createdAt),
                 style: TextStyle(fontSize: 12, color: Colors.grey[500])),
             trailing: isOwner
@@ -300,12 +309,12 @@ class _PostCardState extends State<PostCard> {
                           child: Text("Delete",
                               style: TextStyle(color: Colors.red))),
                     ],
-                    icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                    icon: Icon(Icons.more_vert, color: theme.iconTheme.color), // <--- DYNAMIC ICON COLOR
                   )
                 : null,
           ),
 
-          // 2. Image (POST IMAGE - FIXED)
+          // 2. Image (POST IMAGE)
           if (validPostImageUrl.isNotEmpty)
             Image.network(
               validPostImageUrl,
@@ -319,17 +328,16 @@ class _PostCardState extends State<PostCard> {
                         child: CircularProgressIndicator(color: _seaBlueDark)));
               },
               errorBuilder: (context, error, stackTrace) {
-                // If this still fails, double check your Cloud Name in ImageUtils
                 return Container(
                     height: 200,
-                    color: Colors.grey[100],
+                    color: theme.dividerColor, // <--- DYNAMIC PLACEHOLDER BG
                     child: const Center(
                         child: Icon(Icons.broken_image,
                             size: 50, color: Colors.grey)));
               },
             ),
 
-          // 3. Actions (Likes, Comments)
+          // 3. Actions
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
@@ -338,19 +346,19 @@ class _PostCardState extends State<PostCard> {
                   onTap: _toggleLike,
                   child: Icon(
                     isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: isLiked ? const Color(0xFFE91E63) : Colors.black87,
+                    color: isLiked ? const Color(0xFFE91E63) : theme.iconTheme.color, // <--- DYNAMIC ICON
                     size: 28,
                   ),
                 ),
                 const SizedBox(width: 16),
                 GestureDetector(
                   onTap: _showCommentsModal,
-                  child: const Icon(Icons.chat_bubble_outline_rounded,
-                      size: 26, color: Colors.black87),
+                  child: Icon(Icons.chat_bubble_outline_rounded,
+                      size: 26, color: theme.iconTheme.color), // <--- DYNAMIC ICON
                 ),
                 const Spacer(),
-                const Icon(Icons.bookmark_border_rounded,
-                    size: 28, color: Colors.black87),
+                Icon(Icons.bookmark_border_rounded,
+                    size: 28, color: theme.iconTheme.color), // <--- DYNAMIC ICON
               ],
             ),
           ),
@@ -364,13 +372,16 @@ class _PostCardState extends State<PostCard> {
                 if (likeCount > 0)
                   Text(
                     "$likeCount likes",
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, 
+                        color: theme.colorScheme.onSurface // <--- DYNAMIC TEXT
+                    ),
                   ),
                 const SizedBox(height: 4),
                 if (widget.post.description.isNotEmpty)
                   RichText(
                     text: TextSpan(
-                      style: const TextStyle(color: Colors.black87),
+                      style: TextStyle(color: theme.colorScheme.onSurface), // <--- DYNAMIC TEXT
                       children: [
                         TextSpan(
                             text: "${widget.post.user.username} ",

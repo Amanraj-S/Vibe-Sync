@@ -72,8 +72,8 @@ class _SearchScreenState extends State<SearchScreen> {
     } else {
       setState(() {
         filteredUsers = users
-            .where(
-                (u) => u.username.toLowerCase().contains(keyword.toLowerCase()))
+            .where((u) =>
+                u.username.toLowerCase().contains(keyword.toLowerCase()))
             .toList();
       });
     }
@@ -98,13 +98,16 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white, // Solid White Background
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BG
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.appBarTheme.backgroundColor, // <--- DYNAMIC APPBAR
         elevation: 0,
         centerTitle: true,
-        title: _buildGradientText("Discover", 22), // Gradient Title
+        title: _buildGradientText("Discover", 22),
       ),
       body: Column(
         children: [
@@ -114,12 +117,13 @@ class _SearchScreenState extends State<SearchScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: _runFilter,
+              style: TextStyle(color: theme.colorScheme.onSurface), // <--- INPUT TEXT COLOR
               decoration: InputDecoration(
                 hintText: 'Search for friends...',
-                hintStyle: TextStyle(color: Colors.grey[400]),
+                hintStyle: TextStyle(color: theme.hintColor), // <--- DYNAMIC HINT
                 prefixIcon: Icon(Icons.search, color: _seaBlueDark),
                 filled: true,
-                fillColor: Colors.grey[100], // Matches Auth Input
+                fillColor: theme.inputDecorationTheme.fillColor, // <--- DYNAMIC FILL
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
                 border: OutlineInputBorder(
@@ -140,12 +144,12 @@ class _SearchScreenState extends State<SearchScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.person_search_outlined,
-                                size: 80, color: Colors.grey[200]),
+                                size: 80, color: theme.dividerColor), // <--- DYNAMIC ICON COLOR
                             const SizedBox(height: 16),
                             Text(
                               "No users found",
                               style: TextStyle(
-                                  fontSize: 18, color: Colors.grey[400]),
+                                  fontSize: 18, color: theme.hintColor), // <--- DYNAMIC TEXT COLOR
                             ),
                           ],
                         ),
@@ -154,7 +158,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         itemCount: filteredUsers.length,
                         separatorBuilder: (ctx, i) => Divider(
-                          color: Colors.grey[100],
+                          color: theme.dividerColor, // <--- DYNAMIC DIVIDER
                           height: 1,
                           indent: 80,
                           endIndent: 20,
@@ -183,47 +187,49 @@ class _SearchScreenState extends State<SearchScreen> {
                               ),
                               child: CircleAvatar(
                                 radius: 26,
-                                backgroundColor: Colors.white,
+                                backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                                 backgroundImage: user.profilePic.isNotEmpty
                                     ? NetworkImage(user.profilePic)
                                     : null,
                                 child: user.profilePic.isEmpty
-                                    ? const Icon(Icons.person,
-                                        color: Colors.grey)
+                                    ? Icon(Icons.person,
+                                        color: theme.iconTheme.color) // <--- DYNAMIC ICON
                                     : null,
                               ),
                             ),
                             title: Text(
                               user.username,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: Colors.black87),
+                                  color: theme.colorScheme.onSurface), // <--- DYNAMIC TEXT
                             ),
                             subtitle: Text(
                               "Tap to view profile",
                               style: TextStyle(
-                                  color: Colors.grey[400], fontSize: 13),
+                                  color: theme.hintColor, fontSize: 13), // <--- DYNAMIC SUBTEXT
                             ),
-                            // --- UPDATED BUTTON UI ---
+                            // --- BUTTON UI ---
                             trailing: SizedBox(
                               height: 35,
-                              width: 110, // Increased width to fit text neatly
+                              width: 110,
                               child: isFollowing
                                   ? ElevatedButton(
                                       onPressed: () =>
                                           _toggleFollow(user, isFollowing),
                                       style: ElevatedButton.styleFrom(
-                                        // "Following" Style: Flat Grey
-                                        backgroundColor: Colors.grey[200],
-                                        foregroundColor: Colors.black87,
+                                        // "Following" Style: Flat Grey/Dark
+                                        backgroundColor: theme.brightness == Brightness.dark 
+                                            ? Colors.grey[800] // Dark Grey for Dark Mode
+                                            : Colors.grey[200], // Light Grey for Light Mode
+                                        foregroundColor: theme.colorScheme.onSurface, // Text adapts
                                         elevation: 0,
                                         padding: EdgeInsets.zero,
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
                                               BorderRadius.circular(8),
                                           side: BorderSide(
-                                              color: Colors.grey.shade300),
+                                              color: theme.dividerColor), // Border adapts
                                         ),
                                       ),
                                       child: const Text(

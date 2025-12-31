@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart'; // For kIsWeb check
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Add this
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'layout_screen.dart';
 
@@ -129,6 +129,7 @@ class _AuthScreenState extends State<AuthScreen> {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    required ThemeData theme, // <--- Accept Theme
     bool isPassword = false,
     String? Function(String?)? validator,
     int maxLines = 1,
@@ -139,15 +140,17 @@ class _AuthScreenState extends State<AuthScreen> {
         controller: controller,
         obscureText: isPassword,
         maxLines: maxLines,
+        style: TextStyle(color: theme.colorScheme.onSurface), // <--- DYNAMIC INPUT TEXT
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(color: theme.hintColor), // <--- DYNAMIC LABEL COLOR
           prefixIcon: Icon(icon, color: _seaBlueDark),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: theme.inputDecorationTheme.fillColor, // <--- DYNAMIC FILL COLOR
           contentPadding:
               const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         ),
@@ -158,8 +161,11 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- ACCESS THEME ---
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor, // <--- DYNAMIC BACKGROUND
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 30),
@@ -181,7 +187,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
+                    color: theme.hintColor, // <--- DYNAMIC TEXT COLOR
                   ),
                 ),
 
@@ -201,7 +207,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                           child: CircleAvatar(
                             radius: 50,
-                            backgroundColor: Colors.white,
+                            backgroundColor: theme.cardColor, // <--- DYNAMIC AVATAR BG
                             // Proper logic to show picked image or default icon
                             backgroundImage: _profileImage != null
                                 ? (kIsWeb
@@ -211,7 +217,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 : null,
                             child: _profileImage == null
                                 ? Icon(Icons.person,
-                                    size: 50, color: Colors.grey[300])
+                                    size: 50, color: theme.iconTheme.color) // <--- DYNAMIC ICON
                                 : null,
                           ),
                         ),
@@ -237,6 +243,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     controller: _usernameController,
                     label: "Username",
                     icon: Icons.person_outline,
+                    theme: theme, // Pass Theme
                     validator: (v) => v!.isEmpty ? "Username required" : null,
                   ),
 
@@ -244,6 +251,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     controller: _aboutController,
                     label: "Bio (About)",
                     icon: Icons.info_outline,
+                    theme: theme, // Pass Theme
                     validator: (v) => v!.isEmpty ? "Bio required" : null,
                   ),
                 ],
@@ -253,6 +261,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   controller: _emailController,
                   label: "Email",
                   icon: Icons.email_outlined,
+                  theme: theme, // Pass Theme
                   validator: (v) => v!.contains("@") ? null : "Invalid Email",
                 ),
 
@@ -261,6 +270,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   label: "Password",
                   icon: Icons.lock_outline,
                   isPassword: true,
+                  theme: theme, // Pass Theme
                   validator: (v) => v!.length < 6 ? "Min 6 chars" : null,
                 ),
 
@@ -317,7 +327,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   },
                   child: RichText(
                     text: TextSpan(
-                      style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                      style: TextStyle(color: theme.hintColor, fontSize: 15), // <--- DYNAMIC TEXT COLOR
                       children: [
                         TextSpan(
                             text: isLogin
